@@ -197,6 +197,22 @@ gestion_vehiculos_db>
 
 
 PARTE DE SO
+
+mkdir example_dir
+tree
+mkdir example_dir
+cd example_dir
+nano ej.txt
+ls
+ls -la
+echo "Hola mundo" > ej.txt
+cat ej.txt
+echo "Segunda línea" >> ej.txt
+cat ej.txt
+grep "Hola" ej.txt
+grep "Segunda" ej.txt
+mkdir carpeta
+chmod 1777 carpeta
 mkdir carpeta
 chmod 1777 carpeta
 ls -ld carpeta
