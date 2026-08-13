@@ -7,7 +7,8 @@ export type Paginated<T> = {
   results: T[];
 };
 
-export type Rental = { id: number, 
+export type Rental = { 
+        id: number, 
         vehicle: number, 
         customer_name: string,
         total: number,

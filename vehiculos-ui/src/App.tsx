@@ -47,7 +47,7 @@ export default function App() {
         />
 
         <Route
-          path="/admin/marcas"
+          path="/admin/alquilados"
           element={
             <RequireAuth>
               <AdminAlquiladosPage />

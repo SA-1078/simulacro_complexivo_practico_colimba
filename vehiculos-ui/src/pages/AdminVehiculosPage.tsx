@@ -102,21 +102,7 @@ export default function AdminVehiculosPage() {
         <Stack spacing={2} sx={{ mb: 2 }}>
           <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
 
-            <FormControl sx={{ width: 260 }}>
-              <InputLabel id="marca-label">Marca</InputLabel>
-              <Select
-                labelId="marca-label"
-                label="Marca"
-                value={brand}
-                onChange={(e) => setBrand(String(e.target.value))}
-              >
-                {brandOptions.map((m) => (
-                  <MenuItem key={m} value={m}>
-                    {m}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            
 
             <TextField label="Placa" value={plate} onChange={(e) => setPlate(e.target.value)} fullWidth />
             <TextField label="Marca" value={brand} onChange={(e) => setBrand(e.target.value)} sx={{ width: 160 }} />

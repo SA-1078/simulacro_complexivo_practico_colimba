@@ -195,3 +195,8 @@ gestion_vehiculos_db> db.fleet_logs.find({ "vehicle_id": 1, "created_at": { $gte
 ]
 gestion_vehiculos_db> 
 
+
+PARTE DE SO
+mkdir carpeta
+chmod 1777 carpeta
+ls -ld carpeta
