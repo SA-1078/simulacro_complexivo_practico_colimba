@@ -59,3 +59,30 @@ event_type string (CREATED, PICKED_UP, RETURNED, PAID, CANCELLED)
 source string (WEB, MOBILE, SYSTEM)
 note string
 created_at date
+
+-- Creando usuario en MongoDB:
+db.createUser({
+  user: "gestion_user",
+  pwd: "admin123",
+  roles: [
+    { role: "readWrite", db: "gestion_vehiculos_db" }
+  ]
+})
+
+--INSERTANDO REGISTRO EN MONGO:
+db.fleet_logs.insertOne({
+     "vehicle_id": 1,
+     "note": "Vehículo creado",
+     "action": "creado",
+     "source": "sistema",
+     "created_at": "2024-06-01T12:00:00Z"
+| )}
+
+--CREANDO INDEX EN MONGO:
+db.fleet_logs.createIndex({ "vehicle_id": 1 })
+
+--consulta filtrando por el identificador relacionado con la tabla relacional:
+db.fleet_logs.find({ "vehicle_id": 1 })
+
+-- una consulta usando el campo fecha:
+db.fleet_logs.find({ "vehicle_id": 1, "created_at": { $gte: "2024-06-01T00:00:00Z" } })
