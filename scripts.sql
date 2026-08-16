@@ -30,8 +30,8 @@ CREATE DATABASE rentals_db OWNER backend_user;
 -- --------------------------------------------------------------------------------
 -- 3. ASIGNACIÓN DE PRIVILEGIOS AL ESQUEMA PUBLIC:
 -- --------------------------------------------------------------------------------
-ALTER SCHEMA public OWNER TO backend_user;
 GRANT ALL ON SCHEMA public TO backend_user;
+ALTER SCHEMA public OWNER TO backend_user;
 GRANT CREATE ON SCHEMA public TO backend_user;
 
 ALTER DEFAULT PRIVILEGES FOR USER backend_user IN SCHEMA public
