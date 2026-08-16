@@ -1,3 +1,9 @@
+/**
+ * ============================================================================
+ * ARCHIVO PRINCIPAL DE ENRUTAMIENTO (App.tsx) - VEHICULOS UI
+ * ============================================================================
+ */
+
 import { BrowserRouter, Routes, Route, Link, Navigate } from "react-router-dom";
 import { AppBar, Toolbar, Typography, Button, Stack } from "@mui/material";
 
@@ -15,10 +21,11 @@ import RequireAuth from "./components/RequireAuth";
 export default function App() {
   return (
     <BrowserRouter>
+      {/* Barra de navegación superior */}
       <AppBar position="static">
         <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            Vehículos UI (MUI)
+          <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: "bold" }}>
+            Agencia Vehículos UI (MUI)
           </Typography>
 
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ flexWrap: "wrap" }}>
@@ -31,12 +38,15 @@ export default function App() {
         </Toolbar>
       </AppBar>
 
+      {/* Definición de rutas */}
       <Routes>
+        {/* Rutas Públicas */}
         <Route path="/" element={<HomePage />} />
         <Route path="/acerca" element={<AboutPage />} />
         <Route path="/lista" element={<PublicVehiclesPage />} />
         <Route path="/login" element={<LoginPage />} />
 
+        {/* Rutas Protegidas */}
         <Route
           path="/admin"
           element={
@@ -64,6 +74,7 @@ export default function App() {
           }
         />
 
+        {/* Redirección por defecto */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

@@ -1,5 +1,11 @@
+/**
+ * ============================================================================
+ * SERVICIO API: ALQUILERES (RENTALS - POSTGRESQL)
+ * ============================================================================
+ */
+
 import { http } from "./http";
-    
+
 export type Paginated<T> = {
   count: number;
   next: string | null;
@@ -7,27 +13,31 @@ export type Paginated<T> = {
   results: T[];
 };
 
-export type Rental = { 
-        id: number, 
-        vehicle: number, 
-        customer_name: string,
-        total: number,
-        status: string,
-        created_at: string
-    };
+export type RentalStatus = "RESERVED" | "ACTIVE" | "CLOSED" | "CANCELLED";
+
+export type Rental = {
+  id: number;
+  vehicle: number;
+  vehicle_plate?: string;
+  vehicle_brand?: string;
+  customer_name: string;
+  total: number;
+  status: RentalStatus;
+  created_at?: string;
+};
 
 export async function listRentalsApi() {
   const { data } = await http.get<Paginated<Rental>>("/api/rentals/");
-  return data; // { count, next, previous, results }
-}
-
-export async function createRentalApi(nombre: string) {
-  const { data } = await http.post<Rental>("/api/rentals/", { nombre });
   return data;
 }
 
-export async function updateRentalApi(id: number, nombre: string) {
-  const { data } = await http.put<Rental>(`/api/rentals/${id}/`, { nombre });
+export async function createRentalApi(payload: Omit<Rental, "id" | "created_at" | "vehicle_plate" | "vehicle_brand">) {
+  const { data } = await http.post<Rental>("/api/rentals/", payload);
+  return data;
+}
+
+export async function updateRentalApi(id: number, payload: Partial<Omit<Rental, "id" | "created_at" | "vehicle_plate" | "vehicle_brand">>) {
+  const { data } = await http.patch<Rental>(`/api/rentals/${id}/`, payload);
   return data;
 }
 

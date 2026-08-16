@@ -1,44 +1,72 @@
+"""
+================================================================================
+MODELOS RELACIONALES (POSTGRESQL) - GESTIÓN DE ALQUILER DE VEHÍCULOS
+================================================================================
+Define las tablas relacionales:
+1. Vehicles (Vehículos disponibles para alquiler)
+2. Rentals (Alquileres registrados con relación foránea a Vehicles)
+"""
+
 from django.db import models
 
+
+class RentalStatus(models.TextChoices):
+    RESERVED = "RESERVED", "RESERVED"      # Alquiler reservado
+    ACTIVE = "ACTIVE", "ACTIVE"            # Alquiler en curso / vehículo entregado
+    CLOSED = "CLOSED", "CLOSED"            # Alquiler finalizado y liquidado
+    CANCELLED = "CANCELLED", "CANCELLED"    # Alquiler cancelado
+
+
+# ============================================================================
+# TABLA: vehicles (Vehículos en PostgreSQL)
+# ============================================================================
 class Vehicles(models.Model):
-    plate = models.CharField(max_length=10, unique=True) # en español: placa
-    brand = models.CharField(max_length=40) # en español: marca
-    daily_rate = models.DecimalField(max_digits=10, decimal_places=2) # en español: tarifa_diaria
-    is_available = models.BooleanField(default=True) # en español: disponible
+    # plate: Placa única del vehículo (ej: 'PBA-1020')
+    plate = models.CharField(max_length=10, unique=True)
+    # brand: Marca y modelo comercial (ej: 'Toyota RAV4')
+    brand = models.CharField(max_length=40)
+    # daily_rate: Tarifa diaria de alquiler
+    daily_rate = models.DecimalField(max_digits=10, decimal_places=2)
+    # is_available: Disponibilidad actual del vehículo
+    is_available = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "vehicles"
+        verbose_name = "Vehicle"
+        verbose_name_plural = "Vehicles"
 
     def __str__(self):
-        return self.plate
+        return f"{self.plate} - {self.brand} (${self.daily_rate}/día)"
 
+
+# ============================================================================
+# TABLA: rentals (Alquileres en PostgreSQL)
+# ============================================================================
 class Rentals(models.Model):
-    vehicle = models.ForeignKey(Vehicles, on_delete=models.PROTECT, related_name="rentals")
+    # vehicle: Llave foránea hacia Vehicles con protección de borrado
+    vehicle = models.ForeignKey(
+        Vehicles,
+        on_delete=models.PROTECT,
+        related_name="rentals",
+        db_column="vehicle_id"
+    )
+    # customer_name: Nombre completo del cliente que alquila
     customer_name = models.CharField(max_length=120)
+    # total: Monto total facturado por el alquiler
     total = models.DecimalField(max_digits=10, decimal_places=2)
-    status = models.CharField(max_length=20)
+    # status: Estado del alquiler limitado a los valores de RentalStatus
+    status = models.CharField(
+        max_length=20,
+        choices=RentalStatus.choices,
+        default=RentalStatus.RESERVED
+    )
+    # created_at: Fecha y hora de creación del registro
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        db_table = "rentals"
+        verbose_name = "Rental"
+        verbose_name_plural = "Rentals"
+
     def __str__(self):
-        return f"{self.customer_name} - {self.vehicle.plate}"
-
-
-
-"""
-
-Tabla vehicles (vehículos):
-id BIGSERIAL PRIMARY KEY
-plate VARCHAR(10) NOT NULL UNIQUE
-brand VARCHAR(40) NOT NULL
-daily_rate NUMERIC(10,2) NOT NULL
-is_available BOOLEAN NOT NULL DEFAULT TRUE
-
-
-Tabla rentals (alquileres):
-
-id BIGSERIAL PRIMARY KEY
-vehicle_id BIGINT NOT NULL REFERENCES vehicles(id)
-customer_name VARCHAR(120) NOT NULL
-total NUMERIC(10,2) NOT NULL
-status VARCHAR(20) NOT NULL (RESERVED, ACTIVE, CLOSED, CANCELLED)
-created_at TIMESTAMP NOT NULL DEFAULT NOW()
-
-
-"""
+        return f"Alquiler #{self.id}: {self.customer_name} ({self.status}) - ${self.total}"

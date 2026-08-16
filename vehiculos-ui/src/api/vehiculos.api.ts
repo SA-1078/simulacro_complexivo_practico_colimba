@@ -1,12 +1,17 @@
+/**
+ * ============================================================================
+ * SERVICIO API: VEHÍCULOS (VEHICLES - POSTGRESQL)
+ * ============================================================================
+ */
+
 import { http } from "./http";
-    
+
 export type Paginated<T> = {
   count: number;
   next: string | null;
   previous: string | null;
   results: T[];
 };
-
 
 export type Vehiculo = {
   id: number;
@@ -17,25 +22,25 @@ export type Vehiculo = {
 };
 
 export async function listVehiculosPublicApi() {
-  const { data } = await http.get<Paginated<Vehiculo>>("/api/vehiculos/");
-  return data; // { ... , results: [] }
+  const { data } = await http.get<Paginated<Vehiculo>>("/api/vehicles/");
+  return data;
 }
 
 export async function listVehiculosAdminApi() {
-  const { data } = await http.get<Paginated<Vehiculo>>("/api/vehiculos/");
+  const { data } = await http.get<Paginated<Vehiculo>>("/api/vehicles/");
   return data;
 }
 
 export async function createVehiculoApi(payload: Omit<Vehiculo, "id">) {
-  const { data } = await http.post<Vehiculo>("/api/vehiculos/", payload);
+  const { data } = await http.post<Vehiculo>("/api/vehicles/", payload);
   return data;
 }
 
-export async function updateVehiculoApi(id: number, payload: Partial<Vehiculo>) {
-  const { data } = await http.put<Vehiculo>(`/api/vehiculos/${id}/`, payload);
+export async function updateVehiculoApi(id: number, payload: Partial<Omit<Vehiculo, "id">>) {
+  const { data } = await http.patch<Vehiculo>(`/api/vehicles/${id}/`, payload);
   return data;
 }
 
 export async function deleteVehiculoApi(id: number) {
-  await http.delete(`/api/vehiculos/${id}/`);
+  await http.delete(`/api/vehicles/${id}/`);
 }

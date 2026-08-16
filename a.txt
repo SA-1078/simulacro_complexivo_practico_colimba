@@ -1,0 +1,165 @@
+================================================================================
+SECCIÓN 6: SISTEMAS OPERATIVOS (UBUNTU 24.04 EN VM)
+GUÍA DE COMANDOS Y PASOS PASO A PASO PARA LAS CAPTURAS 26 A 30
+CASO: SISTEMA BÁSICO DE GESTIÓN DE ALQUILERES Y OPERACIONES (AGENCIA DE VEHÍCULOS)
+================================================================================
+
+--------------------------------------------------------------------------------
+1. CREAR ESTRUCTURA DEL PROYECTO (Captura 26)
+--------------------------------------------------------------------------------
+# Crear la estructura de directorios desde el HOME (~):
+mkdir -p ~/examen/alquiler/{backend,frontend,movil,docs}
+
+# Verificar la estructura visualmente con tree:
+cd ~/examen && tree alquiler/
+
+
+--------------------------------------------------------------------------------
+2. NAVEGACIÓN Y VERIFICACIÓN (Captura 27 - Parte 1)
+--------------------------------------------------------------------------------
+# Entrar a la carpeta alquiler, verificar ubicación actual y listar contenido:
+cd ~/examen/alquiler
+pwd
+ls -la
+
+
+--------------------------------------------------------------------------------
+3. CREAR ARCHIVOS DE EVIDENCIA (Captura 27 - Parte 2)
+--------------------------------------------------------------------------------
+# Entrar a la carpeta docs y crear los archivos:
+cd ~/examen/alquiler/docs
+touch alquiler_comandos.txt evidencia.txt
+
+# Registrar la fecha y hora actual del sistema dentro de evidencia.txt:
+date >> evidencia.txt
+
+# Verificar el contenido de evidencia.txt:
+cat evidencia.txt
+
+
+--------------------------------------------------------------------------------
+4. REDIRECCIÓN DE SALIDA (Captura 28)
+--------------------------------------------------------------------------------
+# Guardar la salida del comando who en un archivo (redirección simple con >):
+who > salida_sistema.txt
+
+# Agregar la salida del comando ls -la al mismo archivo (redirección de anexado con >>):
+ls -la >> salida_sistema.txt
+
+# Verificar el contenido final del archivo:
+cat salida_sistema.txt
+
+
+--------------------------------------------------------------------------------
+5. BUSCAR PALABRA DENTRO DE ARCHIVO (Captura 29)
+--------------------------------------------------------------------------------
+# Escribir el contenido exacto requerido dentro de alquiler_comandos.txt:
+cat << 'EOF' > ~/examen/alquiler/docs/alquiler_comandos.txt
+# Sistema de Alquiler - Backend
+GET /api/properties/
+GET /api/rentals/
+POST /api/rentals/
+DELETE /api/rentals/30/
+INFO: rental created successfully
+INFO: rentals service active
+WARN: rentals delay detected
+EOF
+
+# Verificar que el contenido se guardó correctamente:
+cat ~/examen/alquiler/docs/alquiler_comandos.txt
+
+# Buscar la palabra 'rentals' mostrando el número de línea (-n):
+cd ~/examen/alquiler/docs
+grep -n "rentals" alquiler_comandos.txt
+
+
+--------------------------------------------------------------------------------
+6. LOCALIZAR ARCHIVO (Captura 30 - Parte 1)
+--------------------------------------------------------------------------------
+# Crear dentro de la carpeta backend el archivo README.md:
+touch ~/examen/alquiler/backend/README.md
+
+# Localizar el archivo desde la raíz de la carpeta alquiler:
+cd ~/examen/alquiler
+find . -name "README.md"
+
+
+--------------------------------------------------------------------------------
+7. COPIAR Y MOVER ARCHIVOS (Captura 30 - Parte 2)
+--------------------------------------------------------------------------------
+# Entrar a la carpeta docs:
+cd ~/examen/alquiler/docs
+
+# Copiar evidencia.txt como respaldo:
+cp evidencia.txt evidencia_respaldo.txt
+
+# Mover el archivo de respaldo a la carpeta backend:
+mv evidencia_respaldo.txt ~/examen/alquiler/backend/
+
+# Verificar que el archivo se movió correctamente:
+ls -la ~/examen/alquiler/backend/
+
+
+--------------------------------------------------------------------------------
+8. PERMISOS Y STICKY BIT (Captura 30 - Parte 3)
+--------------------------------------------------------------------------------
+# Posicionarse en la carpeta alquiler:
+cd ~/examen/alquiler
+
+# Crear la carpeta shared_alquiler:
+mkdir shared_alquiler
+
+# Aplicar el Sticky Bit (1777: lectura y escritura para todos, pero solo el dueño puede borrar sus archivos):
+chmod 1777 shared_alquiler
+
+# Verificar los permisos y el Sticky Bit (debe mostrar 't' al final: drwxrwxrwt):
+ls -ld shared_alquiler
+
+
+================================================================================
+RESUMEN RÁPIDO DE TODO PARA EJECUCIÓN CONTINUA EN TERMINAL (COPIAR Y PEGAR):
+================================================================================
+mkdir -p ~/examen/alquiler/{backend,frontend,movil,docs}
+cd ~/examen && tree alquiler/
+cd ~/examen/alquiler && pwd && ls -la
+cd docs && touch alquiler_comandos.txt evidencia.txt && date >> evidencia.txt && cat evidencia.txt
+who > salida_sistema.txt && ls -la >> salida_sistema.txt && cat salida_sistema.txt
+cat << 'EOF' > alquiler_comandos.txt
+# Sistema de Alquiler - Backend
+GET /api/properties/
+GET /api/rentals/
+POST /api/rentals/
+DELETE /api/rentals/30/
+INFO: rental created successfully
+INFO: rentals service active
+WARN: rentals delay detected
+EOF
+cat alquiler_comandos.txt && grep -n "rentals" alquiler_comandos.txt
+touch ~/examen/alquiler/backend/README.md
+cd ~/examen/alquiler && find . -name "README.md"
+cd docs && cp evidencia.txt evidencia_respaldo.txt && mv evidencia_respaldo.txt ~/examen/alquiler/backend/
+cd ~/examen/alquiler && ls -ld docs && mkdir shared_alquiler && chmod 1777 shared_alquiler && ls -ld shared_alquiler
+
+
+
+
+================================================================================
+QUITAR LA CARPETA MOVIL PARA SUBIRLA A GITHUB (DESVINCULAR REPOSITORIO EMBEBIDO)
+================================================================================
+Configurar git en el proyecto local para poder subir todos los cambios a GitHub.
+Comando: git config user.name "User"
+Comando: git config user.email "email"
+Comando: git remote add origin "url"
+Comando: git push -u origin main
+
+# 1. Quitar la carpeta móvil del índice de git principal (ej: vehiculos-rn):
+git rm --cached -f -r vehiculos-rn
+
+# 2. Eliminar la carpeta .git interna de la carpeta móvil:
+rm -rf vehiculos-rn/.git
+
+# 3. Volver a agregar todo al repositorio principal:
+git add .
+
+# 4. Verificar el estado:
+git status
