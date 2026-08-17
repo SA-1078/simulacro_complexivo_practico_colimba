@@ -1,37 +1,96 @@
--- ================================================================================
+-- ============================================================================
+-- REFERENCIA DE TABLAS Y COLECCIONES USADAS POR EL BACKEND (DJANGO / API):
+-- ============================================================================
+/*
+Tablas PostgreSQL del Backend (2):
+1. vehicles / marcas (vehículos gestionados por el API)
+2. rentals / vehiculos (alquileres registrados en el API)
+
+Colecciones MongoDB del Backend (2):
+1. service_types / fleet_logs (tipos de servicio de flota)
+2. vehicle_services / rental_events (bitácora de alquileres y servicios)
+*/
+
+-- TABLAS POSTGRESQL (2 TABLAS)
+
+-- Tabla marcas (marcas de vehículos)
+
+CREATE TABLE IF NOT EXISTS marcas (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL UNIQUE,
+    pais_origen VARCHAR(40) NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    creado_en TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- Tabla vehiculos (vehículos gestionados por el API)
+
+CREATE TABLE IF NOT EXISTS vehiculos (
+    id SERIAL PRIMARY KEY,
+    placa VARCHAR(10) NOT NULL UNIQUE,
+    modelo VARCHAR(60) NOT NULL,
+    marca_id INTEGER REFERENCES marcas(id) ON DELETE RESTRICT,
+    anio INTEGER NOT NULL,
+    precio_dia DECIMAL(10,2) NOT NULL,
+    estado VARCHAR(20) NOT NULL CHECK (estado IN ('DISPONIBLE', 'ALQUILADO', 'MANTENIMIENTO', 'INACTIVO')),
+    creado_en TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- COLECCIONES MONGODB (2 COLECCIONES)
+
+-- COLECCION service_types (tipos de servicio de flota)
+/*
+_id ObjectId
+service_type_name string (unique)
+code string (short code)
+is_active boolean
+description string
+*/
+
+-- COLECCION vehicle_services (bitácora de alquileres y servicios)
+/*
+_id ObjectId
+vehicle_id ObjectId (referencia a vehiculos)
+service_type_id ObjectId (referencia a service_types)
+start_date date
+end_date date
+customer_name string
+total_cost decimal
+status string (PENDING, IN_PROGRESS, COMPLETED, CANCELLED)
+created_at date
+*/
+
+-- ============================================================================
 -- EXAMEN COMPLEXIVO PRÁCTICO - CASO AGENCIA DE ALQUILER DE VEHÍCULOS
--- SISTEMA BÁSICO DE GESTIÓN DE ALQUILERES Y OPERACIONES
--- SCRIPTS COMPLETOS: POSTGRESQL (RELACIONAL) Y MONGODB (NOSQL)
--- ================================================================================
+-- GUÍA DE COMANDOS SQL (POSTGRESQL) Y NOSQL (MONGODB) CON EVIDENCIAS
+-- (TABLAS Y COLECCIONES INDEPENDIENTES PARA PRUEBAS Y CAPTURAS DEL EXAMEN)
+-- ============================================================================
 
--- ================================================================================
--- SECCIÓN 1: POSTGRESQL (BASE DE DATOS I) - CAPTURAS 1 A 8
--- ================================================================================
+-- ============================================================================
+-- SECCIÓN 1: BASE DE DATOS RELACIONAL (POSTGRESQL) - CAPTURAS 1 A 8
+-- ============================================================================
 
--- --------------------------------------------------------------------------------
--- 1. CONEXIÓN INICIAL COMO SUPERUSUARIO (Terminal / psql):
--- --------------------------------------------------------------------------------
-sudo -u postgres psql
+-- ----------------------------------------------------------------------------
+-- CAPTURA 1: Creación de Base de Datos
+-- ----------------------------------------------------------------------------
+-- Ingreso a PostgreSQL como superusuario:
+-- sudo -u postgres psql
 
--- --------------------------------------------------------------------------------
--- 2. CREACIÓN DE BASE DE DATOS Y USUARIO DE SERVICIO:
--- --------------------------------------------------------------------------------
+CREATE DATABASE rentals_db;
+
+-- ----------------------------------------------------------------------------
+-- CAPTURA 2: Creación de Usuario y Asignación de Permisos (No Superusuario)
+-- ----------------------------------------------------------------------------
 CREATE USER backend_user WITH PASSWORD 'admin123';
--- También compatible con:
--- CREATE USER gestion_user WITH PASSWORD 'admin123';
 
-CREATE DATABASE rentals_db OWNER backend_user;
--- Si tu proyecto usa gestion_vehiculos_db:
--- CREATE DATABASE gestion_vehiculos_db OWNER backend_user;
+GRANT ALL PRIVILEGES ON DATABASE rentals_db TO backend_user;
+ALTER DATABASE rentals_db OWNER TO backend_user;
 
--- Conectar a la base de datos recién creada:
+-- Conectar a la base de datos para configurar permisos sobre el esquema public:
 \c rentals_db
 
--- --------------------------------------------------------------------------------
--- 3. ASIGNACIÓN DE PRIVILEGIOS AL ESQUEMA PUBLIC:
--- --------------------------------------------------------------------------------
-GRANT ALL ON SCHEMA public TO backend_user;
 ALTER SCHEMA public OWNER TO backend_user;
+GRANT ALL ON SCHEMA public TO backend_user;
 GRANT CREATE ON SCHEMA public TO backend_user;
 
 ALTER DEFAULT PRIVILEGES FOR USER backend_user IN SCHEMA public
@@ -43,160 +102,179 @@ GRANT ALL ON SEQUENCES TO backend_user;
 ALTER DEFAULT PRIVILEGES FOR USER backend_user IN SCHEMA public
 GRANT ALL ON FUNCTIONS TO backend_user;
 
--- Salir de psql:
 \q
 
--- --------------------------------------------------------------------------------
--- 4. VERIFICACIÓN DE CONEXIÓN CON EL USUARIO DE SERVICIO:
--- --------------------------------------------------------------------------------
-psql -U backend_user -d rentals_db -h 127.0.0.1 -W
--- (Ingresar contraseña: admin123)
+-- ----------------------------------------------------------------------------
+-- CAPTURA 3: Conexión con el Usuario Creado
+-- ----------------------------------------------------------------------------
+-- Probar la conexión desde terminal con el usuario creado:
+-- psql -h 127.0.0.1 -U backend_user -d rentals_db
+-- Password: admin123
 
--- --------------------------------------------------------------------------------
--- 5. TABLAS RELACIONALES (Generadas por Django Migrations o DDL Manual):
--- --------------------------------------------------------------------------------
+-- Listar las bases de datos para evidenciar conexión y existencia de rentals_db:
+\l
 
--- Tabla 1: vehicles (vehículos)
-CREATE TABLE IF NOT EXISTS vehicles (
+-- ----------------------------------------------------------------------------
+-- CAPTURA 4 y 5: Creación de Tablas Independientes con Relaciones (FK)
+-- (Independientes del API: talleres_mantenimiento y ordenes_servicio)
+-- ----------------------------------------------------------------------------
+
+-- Tabla Principal 1: talleres_mantenimiento
+CREATE TABLE IF NOT EXISTS talleres_mantenimiento (
     id BIGSERIAL PRIMARY KEY,
-    plate VARCHAR(10) NOT NULL UNIQUE,
-    brand VARCHAR(40) NOT NULL,
-    daily_rate NUMERIC(10,2) NOT NULL,
-    is_available BOOLEAN NOT NULL DEFAULT TRUE
+    codigo VARCHAR(10) NOT NULL UNIQUE,
+    nombre VARCHAR(60) NOT NULL,
+    ciudad VARCHAR(40) NOT NULL,
+    capacidad_autos INTEGER NOT NULL DEFAULT 5,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    creado_en TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- Tabla 2: rentals (alquileres)
-CREATE TABLE IF NOT EXISTS rentals (
+-- Tabla Dependiente 2: ordenes_servicio (con FK a talleres_mantenimiento)
+CREATE TABLE IF NOT EXISTS ordenes_servicio (
     id BIGSERIAL PRIMARY KEY,
-    vehicle_id BIGINT NOT NULL REFERENCES vehicles(id) ON DELETE PROTECT,
-    customer_name VARCHAR(120) NOT NULL,
-    total NUMERIC(10,2) NOT NULL,
-    status VARCHAR(20) NOT NULL CHECK (status IN ('RESERVED', 'ACTIVE', 'CLOSED', 'CANCELLED')),
-    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+    taller_id BIGINT NOT NULL REFERENCES talleres_mantenimiento(id) ON DELETE PROTECT,
+    placa_auto VARCHAR(10) NOT NULL,
+    mecanico_responsable VARCHAR(120) NOT NULL,
+    costo NUMERIC(10,2) NOT NULL,
+    estado VARCHAR(20) NOT NULL CHECK (estado IN ('PENDIENTE', 'EN_PROCESO', 'COMPLETADO', 'CANCELADO')),
+    creada_en TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- Verificar tablas creadas:
+-- Listar tablas creadas:
 \dt
-SELECT * FROM vehicles;
-SELECT * FROM rentals;
 
--- --------------------------------------------------------------------------------
--- 6. INSERCIÓN DE DATOS DE PRUEBA (SEED DATA):
--- --------------------------------------------------------------------------------
-INSERT INTO vehicles (plate, brand, daily_rate, is_available) VALUES
-('PBA-1020', 'Toyota RAV4', 45.00, TRUE),
-('PBA-3040', 'Chevrolet Tracker', 40.00, FALSE),
-('GYE-5060', 'Hyundai Tucson', 50.00, TRUE),
-('AZU-7080', 'Nissan Kicks', 38.00, FALSE)
-ON CONFLICT (plate) DO NOTHING;
+-- Ver estructura detallada y relaciones (FK):
+\d talleres_mantenimiento
+\d ordenes_servicio
 
-INSERT INTO rentals (vehicle_id, customer_name, total, status, created_at) VALUES
-(1, 'Carlos Mendoza', 135.00, 'ACTIVE', NOW() - INTERVAL '2 days'),
-(2, 'Andrea Paredes', 200.00, 'RESERVED', NOW() - INTERVAL '1 day'),
-(3, 'Juan Colimba', 150.00, 'CLOSED', NOW() - INTERVAL '5 days'),
-(4, 'Sofia Morales', 114.00, 'CANCELLED', NOW() - INTERVAL '3 days');
+-- ----------------------------------------------------------------------------
+-- INSERCIÓN DE REGISTROS DE PRUEBA (Mínimo 1 por tabla)
+-- ----------------------------------------------------------------------------
+-- 1. Insertar talleres:
+INSERT INTO talleres_mantenimiento (codigo, nombre, ciudad, capacidad_autos)
+VALUES 
+    ('TAL-01', 'Taller Central Norte', 'Quito', 10),
+    ('TAL-02', 'Taller Express Sur', 'Guayaquil', 6),
+    ('TAL-03', 'Taller Mecánica Integral', 'Cuenca', 4)
+ON CONFLICT (codigo) DO NOTHING;
 
--- --------------------------------------------------------------------------------
--- 7. CREACIÓN Y PRUEBA DEL ÍNDICE DE ESTADOS (Optimización de consultas):
--- --------------------------------------------------------------------------------
-CREATE INDEX IF NOT EXISTS idx_rentals_status ON rentals(status);
+-- 2. Insertar órdenes de servicio vinculadas a los talleres:
+INSERT INTO ordenes_servicio (taller_id, placa_auto, mecanico_responsable, costo, estado, creada_en)
+VALUES 
+    (1, 'PBA-1020', 'Juan Mecanico', 120.00, 'EN_PROCESO', NOW() - INTERVAL '2 days'),
+    (1, 'PBA-3040', 'Juan Mecanico', 45.00, 'PENDIENTE', NOW() - INTERVAL '1 day'),
+    (2, 'GYE-5060', 'Marcos Salguero', 200.00, 'COMPLETADO', NOW() - INTERVAL '5 days'),
+    (3, 'AZU-7080', 'Luis Paredes', 80.00, 'CANCELADO', NOW() - INTERVAL '3 days');
 
--- Demostrar el uso del índice con EXPLAIN:
-EXPLAIN SELECT * FROM rentals WHERE status = 'ACTIVE';
-SELECT * FROM rentals WHERE status = 'ACTIVE';
-SELECT * FROM vehicles WHERE is_available = TRUE;
+-- Verificar registros:
+SELECT * FROM talleres_mantenimiento;
+SELECT * FROM ordenes_servicio;
 
--- --------------------------------------------------------------------------------
--- 8. CREACIÓN DE VISTA: vw_active_rentals (Alquileres RESERVED o ACTIVE)
--- --------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW vw_active_rentals AS
+-- ----------------------------------------------------------------------------
+-- CAPTURA 6: Creación de Índice en campo frecuente y Demostración con EXPLAIN
+-- ----------------------------------------------------------------------------
+-- Crear índice en la columna 'estado' de ordenes_servicio:
+CREATE INDEX IF NOT EXISTS idx_ordenes_estado ON ordenes_servicio (estado);
+
+-- Verificar la existencia del índice:
+SELECT indexname, indexdef 
+FROM pg_indexes 
+WHERE tablename = 'ordenes_servicio';
+
+-- Demostrar el uso del índice con EXPLAIN ANALYZE:
+EXPLAIN ANALYZE 
+SELECT * FROM ordenes_servicio 
+WHERE estado = 'EN_PROCESO';
+
+-- ----------------------------------------------------------------------------
+-- CAPTURA 7: Creación de Vista que Filtra por Subconjunto de Estados
+-- ----------------------------------------------------------------------------
+-- Vista que lista órdenes activas (PENDIENTE y EN_PROCESO) con datos del taller:
+CREATE OR REPLACE VIEW vw_ordenes_activas AS
 SELECT 
-    r.id AS rental_id,
-    r.customer_name,
-    v.plate,
-    v.brand,
-    r.total,
-    r.status,
-    r.created_at
-FROM rentals r
-INNER JOIN vehicles v ON r.vehicle_id = v.id
-WHERE r.status IN ('RESERVED', 'ACTIVE');
+    o.id AS orden_id,
+    o.placa_auto,
+    o.mecanico_responsable,
+    o.costo,
+    o.estado,
+    t.codigo AS codigo_taller,
+    t.nombre AS nombre_taller,
+    t.ciudad,
+    o.creada_en AS orden_fecha
+FROM ordenes_servicio o
+INNER JOIN talleres_mantenimiento t ON o.taller_id = t.id
+WHERE o.estado IN ('PENDIENTE', 'EN_PROCESO');
 
--- Consultar la vista:
-SELECT * FROM vw_active_rentals;
+-- Consulta ejecutada sobre la vista:
+SELECT * FROM vw_ordenes_activas;
 
--- --------------------------------------------------------------------------------
--- 9. FUNCIÓN ALMACENADA: fn_total_rentals_por_estado
--- --------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION fn_total_rentals_por_estado(p_status VARCHAR)
+-- ----------------------------------------------------------------------------
+-- CAPTURA 8: Función o Trigger con Regla de Integridad del Dominio
+-- ----------------------------------------------------------------------------
+
+-- OPCIÓN A: Función almacenada para contar total de órdenes por estado
+CREATE OR REPLACE FUNCTION fn_total_ordenes_por_estado(p_estado VARCHAR)
 RETURNS INTEGER AS $$
 DECLARE
     v_total INTEGER;
 BEGIN
     SELECT COUNT(*) INTO v_total
-    FROM rentals
-    WHERE status = UPPER(p_status);
+    FROM ordenes_servicio
+    WHERE estado = UPPER(p_estado);
     
     RETURN v_total;
 END;
 $$ LANGUAGE plpgsql;
 
 -- Probar la función:
-SELECT fn_total_rentals_por_estado('ACTIVE') AS total_activos;
-SELECT fn_total_rentals_por_estado('RESERVED') AS total_reservados;
+SELECT fn_total_ordenes_por_estado('EN_PROCESO') AS total_en_proceso;
+SELECT fn_total_ordenes_por_estado('PENDIENTE') AS total_pendientes;
 
--- --------------------------------------------------------------------------------
--- 10. TRIGGER: trg_validar_rental_total (Impide crear alquileres con total <= 0)
--- --------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION fn_validar_rental_total()
+-- OPCIÓN B: Trigger para validar que el costo del servicio sea mayor a 0
+CREATE OR REPLACE FUNCTION fn_validar_costo_servicio()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF NEW.total <= 0 THEN
-        RAISE EXCEPTION 'El monto total del alquiler debe ser mayor a 0 (Recibido: %)', NEW.total;
+    IF NEW.costo <= 0 THEN
+        RAISE EXCEPTION 'El costo del servicio debe ser mayor a $0.00 (Recibido: %)', NEW.costo;
     END IF;
-    -- Normalizar estado a mayúsculas
-    NEW.status := UPPER(NEW.status);
+    -- Normalizar placa y estado a mayúsculas
+    NEW.placa_auto := UPPER(TRIM(NEW.placa_auto));
+    NEW.estado := UPPER(TRIM(NEW.estado));
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE TRIGGER trg_validar_rental_total
-BEFORE INSERT OR UPDATE ON rentals
+CREATE OR REPLACE TRIGGER trg_validar_costo_servicio
+BEFORE INSERT OR UPDATE ON ordenes_servicio
 FOR EACH ROW
-EXECUTE FUNCTION fn_validar_rental_total();
+EXECUTE FUNCTION fn_validar_costo_servicio();
 
--- TRIGGER ADICIONAL: Normalizar placa de vehículos en mayúsculas
-CREATE OR REPLACE FUNCTION fn_validar_plate_upper()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.plate := UPPER(TRIM(NEW.plate));
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+-- Prueba del trigger con inserción válida:
+INSERT INTO ordenes_servicio (taller_id, placa_auto, mecanico_responsable, costo, estado, creada_en)
+VALUES (1, 'pba-9999', 'Tecnico Especialista', 95.00, 'PENDIENTE', NOW());
 
-CREATE OR REPLACE TRIGGER trg_validar_plate_upper
-BEFORE INSERT OR UPDATE ON vehicles
-FOR EACH ROW
-EXECUTE FUNCTION fn_validar_plate_upper();
+-- Prueba del trigger que debe fallar (costo <= 0):
+-- INSERT INTO ordenes_servicio (taller_id, placa_auto, mecanico_responsable, costo, estado, creada_en)
+-- VALUES (1, 'PBA-9999', 'Tecnico Especialista', 0.00, 'PENDIENTE', NOW());
 
 
+-- ============================================================================
+-- SECCIÓN 2: BASE DE DATOS NO RELACIONAL (MONGODB) - CAPTURAS 9 A 14
+-- (COLECCIONES INDEPENDIENTES PARA PRUEBAS Y EVIDENCIAS DEL EXAMEN)
+-- ============================================================================
 
--- ================================================================================
--- SECCIÓN 2: MONGODB (BASE DE DATOS II) - CAPTURAS 9 A 14
--- ================================================================================
+-- Ejecutar en terminal: mongosh
 
--- --------------------------------------------------------------------------------
--- 1. ENTRAR A LA TERMINAL MONGOSH Y SELECCIONAR LA BASE DE DATOS:
--- --------------------------------------------------------------------------------
-mongosh
-
--- Seleccionar la base de datos NoSQL del caso:
+/*
+// ----------------------------------------------------------------------------
+// CAPTURA 9: Creación y Selección de Base de Datos
+// ----------------------------------------------------------------------------
 use rentals_logs;
--- (o use gestion_vehiculos_db;)
 
--- --------------------------------------------------------------------------------
--- 2. CREACIÓN DE USUARIO CON ROL readWrite (Sin privilegios globales de admin):
--- --------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// CAPTURA 10: Creación de Usuario con Roles Mínimos de Lectura/Escritura
+// ----------------------------------------------------------------------------
 db.createUser({
   user: "mongo_backend_user",
   pwd: "exa_2026_ute",
@@ -205,105 +283,110 @@ db.createUser({
   ]
 });
 
--- Salir de mongosh:
-exit;
+// Prueba de autenticación con el usuario creado:
+db.auth("mongo_backend_user", "exa_2026_ute");
 
--- --------------------------------------------------------------------------------
--- 3. PROBAR AUTENTICACIÓN DEL USUARIO MONGODB:
--- --------------------------------------------------------------------------------
-mongosh -u mongo_backend_user -p exa_2026_ute --authenticationDatabase rentals_logs
-
-use rentals_logs;
-
--- --------------------------------------------------------------------------------
--- 4. CREACIÓN E INSERCIÓN EN LA COLECCIÓN fleet_logs (Bitácora de Flota):
--- --------------------------------------------------------------------------------
-db.fleet_logs.insertMany([
+// ----------------------------------------------------------------------------
+// CAPTURA 11: Definición de Colecciones Independientes e Inserción de Prueba
+// ----------------------------------------------------------------------------
+// 1. Inserción en colección repuestos_inventario (Independiente):
+db.repuestos_inventario.insertMany([
   {
-    "vehicle_id": NumberLong(1),
-    "action": "CREATED",
-    "note": "Vehículo ingresado a la flota activa",
-    "source": "SYSTEM",
-    "created_at": new Date("2026-08-10T09:00:00Z")
+    codigo_repuesto: "REP-001",
+    nombre: "Filtro de Aceite Sintético",
+    fabricante: "Bosch",
+    precio_unitario: 18.50,
+    stock: 45,
+    is_active: true,
+    created_at: new Date()
   },
   {
-    "vehicle_id": NumberLong(2),
-    "action": "MAINTENANCE",
-    "note": "Cambio de pastillas de freno y balanceo",
-    "source": "MOBILE",
-    "created_at": new Date("2026-08-12T14:30:00Z")
+    codigo_repuesto: "REP-002",
+    nombre: "Pastillas de Freno Delanteras",
+    fabricante: "Brembo",
+    precio_unitario: 55.00,
+    stock: 20,
+    is_active: true,
+    created_at: new Date()
   },
   {
-    "vehicle_id": NumberLong(3),
-    "action": "UPDATED",
-    "note": "Actualización de tarifa diaria a $50.00",
-    "source": "SYSTEM",
-    "created_at": new Date("2026-08-14T11:15:00Z")
+    codigo_repuesto: "REP-003",
+    nombre: "Batería 12V 65Ah",
+    fabricante: "Bosch",
+    precio_unitario: 110.00,
+    stock: 12,
+    is_active: true,
+    created_at: new Date()
   }
 ]);
 
--- --------------------------------------------------------------------------------
--- 5. CREACIÓN E INSERCIÓN EN LA COLECCIÓN rental_events (Eventos Operativos):
--- --------------------------------------------------------------------------------
-db.rental_events.insertMany([
+// 2. Inserción en colección ordenes_bitacora (vinculando orden_id de SQL):
+db.ordenes_bitacora.insertMany([
   {
-    "rental_id": NumberLong(1),
-    "event_type": "CREATED",
-    "source": "WEB",
-    "note": "Reserva creada para cliente Carlos Mendoza",
-    "created_at": new Date("2026-08-13T08:00:00Z")
+    orden_id: NumberLong(1),
+    event_type: "ORDEN_CREADA",
+    source: "SYSTEM",
+    note: "Vehículo PBA-1020 ingresó a mantenimiento preventivo",
+    created_at: new Date("2026-08-13T08:00:00Z")
   },
   {
-    "rental_id": NumberLong(1),
-    "event_type": "PICKED_UP",
-    "source": "MOBILE",
-    "note": "Vehículo entregado con tanque lleno y odómetro 45,200 km",
-    "created_at": new Date("2026-08-13T09:30:00Z")
+    orden_id: NumberLong(1),
+    event_type: "EN_DIAGNOSTICO",
+    source: "MOBILE",
+    note: "Diagnóstico computarizado completado sin fallas de motor",
+    created_at: new Date("2026-08-13T09:30:00Z")
   },
   {
-    "rental_id": NumberLong(2),
-    "event_type": "CREATED",
-    "source": "WEB",
-    "note": "Reserva confirmada con abono previo",
-    "created_at": new Date("2026-08-14T10:00:00Z")
+    orden_id: NumberLong(1),
+    event_type: "TRABAJO_FINALIZADO",
+    source: "WEB",
+    note: "Cambio de pastillas de freno y cambio de aceite completados",
+    created_at: new Date("2026-08-13T16:00:00Z")
   },
   {
-    "rental_id": NumberLong(3),
-    "event_type": "RETURNED",
-    "source": "MOBILE",
-    "note": "Vehículo devuelto en perfecto estado",
-    "created_at": new Date("2026-08-15T16:00:00Z")
+    orden_id: NumberLong(2),
+    event_type: "ORDEN_CREADA",
+    source: "MOBILE",
+    note: "Revisión de suspensión registrada desde tablet móvil",
+    created_at: new Date("2026-08-14T10:00:00Z")
   },
   {
-    "rental_id": NumberLong(3),
-    "event_type": "PAID",
-    "source": "SYSTEM",
-    "note": "Pago liquidado con tarjeta de crédito",
-    "created_at": new Date("2026-08-15T16:10:00Z")
+    orden_id: NumberLong(3),
+    event_type: "ORDEN_ENTREGADA",
+    source: "SYSTEM",
+    note: "Vehículo entregado al conductor con firma electrónica",
+    created_at: new Date("2026-08-15T15:30:00Z")
   }
 ]);
 
--- --------------------------------------------------------------------------------
--- 6. CREACIÓN DE ÍNDICES EN MONGODB:
--- --------------------------------------------------------------------------------
-db.rental_events.createIndex({ "rental_id": 1 });
-db.fleet_logs.createIndex({ "vehicle_id": 1 });
+// Listar colecciones creadas:
+show collections;
 
--- Evidenciar índices creados:
-db.rental_events.getIndexes();
-db.fleet_logs.getIndexes();
+// Mostrar documentos insertados:
+db.repuestos_inventario.find().pretty();
+db.ordenes_bitacora.find().pretty();
 
--- --------------------------------------------------------------------------------
--- 7. CONSULTAS DE EVIDENCIA EN MONGODB:
--- --------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// CAPTURA 12: Creación de Índice sobre el campo que referencia a SQL (orden_id)
+// ----------------------------------------------------------------------------
+db.ordenes_bitacora.createIndex({ orden_id: 1 });
 
--- Consulta 1: Filtrar eventos por el identificador del alquiler relacional (rental_id):
-db.rental_events.find({ "rental_id": NumberLong(1) }).pretty();
+// Evidenciar índices creados con getIndexes():
+db.ordenes_bitacora.getIndexes();
 
--- Consulta 2: Filtrar eventos por rango de fechas (created_at):
-db.rental_events.find({
-  "created_at": {
+// ----------------------------------------------------------------------------
+// CAPTURA 13: Consulta por Campo Clave (orden_id)
+// ----------------------------------------------------------------------------
+db.ordenes_bitacora.find({ orden_id: NumberLong(1) }).pretty();
+
+// ----------------------------------------------------------------------------
+// CAPTURA 14: Consulta por Rango de Fechas (created_at)
+// ----------------------------------------------------------------------------
+db.ordenes_bitacora.find({
+  created_at: {
     $gte: new Date("2026-08-13T00:00:00Z"),
     $lte: new Date("2026-08-15T23:59:59Z")
   }
 }).pretty();
+
+*/
