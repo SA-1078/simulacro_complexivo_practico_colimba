@@ -5,7 +5,6 @@ GUÍA RÁPIDA: INSTALACIÓN, USO Y LIMPIEZA TOTAL (TERMINAL DIRECTO)
 --------------------------------------------------------------------
 PASO 1: INSTALAR Y CONECTAR CLOUDFLARE WARP 
 --------------------------------------------------------------------
-Copia y pega todo este bloque en tu terminal:
 
 sudo ufw disable 2>/dev/null
 curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | sudo gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
@@ -18,7 +17,6 @@ warp-cli status
 --------------------------------------------------------------------
 PASO 2: INSTALAR Y EJECUTAR CLI
 --------------------------------------------------------------------
-Copia y pega este bloque para instalar y lanzar:
 
 curl -fsSL https://antigravity.google/cli/install.sh | bash
 export PATH="$HOME/.local/bin:$PATH"
@@ -27,7 +25,6 @@ agy
 --------------------------------------------------------------------
 PASO 3: DEJAR EL SISTEMA COMO ANTES
 --------------------------------------------------------------------
-Copia y pega todo este bloque al terminar para borrar todo y restaurar el sistema:
 
 # 1. Desconectar, borrar registro y purgar Cloudflare WARP
 warp-cli disconnect 2>/dev/null
